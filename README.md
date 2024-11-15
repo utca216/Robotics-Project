@@ -24,7 +24,7 @@
 
 ## Схема подключения
 
-![Figura-5-Circuito-logico-del-funcionamiento-completo-del-Robot-aspiradora-Hybrid-AV](https://github.com/user-attachments/assets/7410ea0f-ebf1-4300-9545-c178297da527)
+![Figura-5-Circuito-logico-del-funcionamiento-completo-del-Robot-aspiradora-Hybrid-AV](https://github.com/user-attachments/assets/ad30f50b-dc55-486b-8368-ffe4c60f2925)
 
 
 
