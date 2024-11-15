@@ -19,8 +19,8 @@
 #define SERVO_GND_PIN 12  // GND для сервомотора
 
 // Пины для датчиков цвета
-#define FRONT_COLOR_SENSOR_PIN 13 // Датчик спереди
-#define REAR_COLOR_SENSOR_PIN 14  // Датчик сзади
+#define photoResistorFrontPin = A0;  // Передний фоторезистор
+#define photoResistorBackPin = A1;   // Задний фоторезистор
 
 Ultrasonic ultrasonic(TRIG_PIN, ECHO_PIN); // Инициализация ультразвукового датчика
 Servo servo;                               // Объект для управления сервомотором
@@ -51,9 +51,9 @@ void setup() {
   // Подключение сервопривода к управляющему пину
   servo.attach(SERVO_PIN);
 
-  // Пины для датчиков цвета
-  pinMode(FRONT_COLOR_SENSOR_PIN, INPUT);
-  pinMode(REAR_COLOR_SENSOR_PIN, INPUT);
+  // Настройка фоторезисторов
+  pinMode(photoResistorFrontPin, INPUT);
+  pinMode(photoResistorBackPin, INPUT);
 
   // Инициализация скорости моторов
   analogWrite(ENA, 255); // Максимальная скорость для первого двигателя
@@ -65,16 +65,23 @@ void setup() {
 
 void loop() {
   long distance = ultrasonic.read(); // Считываем расстояние с ультразвукового датчика
+  
+  // Чтение значений с фоторезисторов
+  int frontLightLevel = analogRead(photoResistorFrontPin);
+  int backLightLevel = analogRead(photoResistorBackPin);
 
-  // Проверка черной линии спереди или сзади
-  if (digitalRead(FRONT_COLOR_SENSOR_PIN) == HIGH) {
-    // Если передний датчик обнаружил черную линию, отъезжаем назад
-    moveBackwardFor(moveTimeOnLine);
-  } 
-  else if (digitalRead(REAR_COLOR_SENSOR_PIN) == HIGH) {
-    // Если задний датчик обнаружил черную линию, едем вперед
-    moveForwardFor(moveTimeOnLine);
-  } 
+  // Проверка на черную линию сзади и спереди
+  if (frontLightLevel < lightThreshold) {
+    // Черная линия спереди - отъехать назад
+    moveBackward();
+    delay(500);
+    stopMotors();
+  } else if (backLightLevel < lightThreshold) {
+    // Черная линия сзади - ехать вперед
+    moveForward();
+    delay(500);
+    stopMotors();
+  }
   else {
     // Основная логика движения
     if (distance < 5) {
