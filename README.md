@@ -5,6 +5,8 @@
 This project is dedicated to creating a Sumo Robot based on Arduino Uno. The robot can rotate in place, detect a target using an ultrasonic sensor, approach it, and lift it with a servo motor. The robot is designed for competitions and educational purposes.
 
 ---
+youtube link review : https://youtu.be/Bnb9vx9FYuA
+---
 
 ## Features
 - Rotates in place to scan for targets.
