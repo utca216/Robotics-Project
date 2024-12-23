@@ -106,4 +106,10 @@ In this project, we built a robot that demonstrates the basic principles of work
 - How to connect and program motors and sensors.
 - How to develop algorithms for autonomous robot control.
 
+### Improvements for Future
+- Add obstacle avoidance using additional sensors (e.g., infrared or proximity sensors).
+- Optimize the lifting mechanism for more diverse object handling.
+- Improve power management by integrating a more efficient battery system.
+- Enhance the algorithm for smoother and faster transitions between states.
+
 This project helps develop skills in robotics, programming, and engineering design, and provides an excellent foundation for more complex projects.
