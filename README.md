@@ -1,77 +1,94 @@
-# Робот Сумо на Arduino Uno
+# Sumo Robot based on Arduino Uno 
 
-Участники команды:
-  Урмат Токтокожоев
-  Розалина Акылбекова
+## Team members: Toktokozhoev Urmat, Akylbekova Rozalina
 
-## Описание проекта
+This project is dedicated to creating a Sumo Robot based on Arduino Uno. The robot can rotate in place, detect a target using an ultrasonic sensor, approach it, and lift it with a servo motor. The robot is designed for competitions and educational purposes.
 
-Этот проект представляет собой робота-сумо, управляемого микроконтроллером Arduino Uno. Робот движется с помощью двух двигателей, управляемых драйвером L298N, и обнаруживает препятствия с помощью ультразвукового датчика. Дополнительно установлен сервомотор, который активирует привод механизма захвата при обнаружении препятствия на расстоянии менее 5 см.
+---
 
-## Использованные компоненты
+## Features
+- Rotates in place to scan for targets.
+- Detects objects using an ultrasonic sensor.
+- Autonomously approaches detected targets.
+- Lifts the target using a servo motor.
 
-- **Микроконтроллер**: Arduino Uno
-- **Датчики**:
-  - Ультразвуковой датчик расстояния (HC-SR04)
-- **Механика**:
-  - 2 электрических двигателя постоянного тока (DC)
-  - Сервомотор — для срабатывания захватывающего механизма при близком препятствии
-- **Электроника**:
-  - Драйвер двигателей L298N
-- **Элементы питания**:
-  - 2 li-ion батареи. Суммарное напрядение 7.4v
-- **Прочее**:
-  - Провода для соединений
-  - Шасси для робота
+---
 
-## Схема подключения
+## Components Used
+1. **Microcontroller**: Arduino Uno
+2. **Motor Driver**: MH Electronics Motor Shield
+3. **Sensors**: Ultrasonic Sensor (e.g., HC-SR04)
+4. **Actuators**:
+   - Servo motor (for lifting objects)
+   - 2 DC motors (for movement)
+5. **Power Supply**:
+   - 2 battery holders
+   - 2 rechargeable batteries
+6. **Structural Components**:
+   - 3D-printed parts for the robot chassis and lifting mechanism
+     
+![5424649132456404260](https://github.com/user-attachments/assets/cbde526d-9e1a-4702-aded-cc28635f2ecf)
 
-![Figura-5-Circuito-logico-del-funcionamiento-completo-del-Robot-aspiradora-Hybrid-AV](https://github.com/user-attachments/assets/e498557d-b785-4b83-984d-80fc4e482fec)
+---
+
+## Required Tools
+- Soldering kit
+- 3D printer
+- Screwdrivers and assembly tools
+- Arduino IDE (for programming the microcontroller)
+
+---
+
+## Setup Instructions
+1. **Assembly**:
+   - Attach the motors to the chassis.
+   - Mount the wheels on the motors.
+   - Install the servo motor into the lifting mechanism.
+   - Attach the ultrasonic sensor to the front of the robot.
+   - Assemble the 3D-printed parts for the chassis and lifting mechanism.
+
+2. **Wiring**:
+   - Connect the motors to the MH Electronics Motor Shield.
+   - Mount the motor shield onto the Arduino Uno.
+   - Connect the ultrasonic sensor to the digital pins of the Arduino:
+     * VCC - Analog 2
+     * Trig - Analog 3
+     * Echo - Analog 4
+     * GND - Analog 5
+   - Attach the servo motor to the designated pin on the motor shield (Ser1).
+     * GND - -
+     * VCC - +
+     * Control - S
+   - Power the setup using the battery holders and batteries.
+
+3. **Programming**:
+   - Install Arduino IDE on your computer.
+   - Use the provided code to program the Arduino Uno.
+   - Upload the code to the Arduino using a USB cable.
+
+---
+
+## Code Overview
+The Arduino code includes:
+- **Motor Control**: Manages the robot's rotation and movement.
+- **Sensor Reading**: Continuously monitors the ultrasonic sensor for objects.
+- **Target Detection**: Processes sensor data to identify objects.
+- **Lifting Mechanism**: Controls the servo motor to lift objects.
 
 
+---
 
+## License
+This project is open-source and available for educational and personal use.
 
+---
 
-### Подключение компонентов:
+## Conclusion
 
-1. **Arduino Uno**:
-   - пины управления двигателями к пинам `IN1`, `IN2`, `IN3`, `IN4` на модуле L298N.
-   - пины `ENA` и `ENB` к ШИМ-пинам Arduino для управления скоростью моторов (например, пины 6 и 7).
-   - ультразвуковой датчик:
-     - `TRIG` к пину 8 Arduino
-     - `ECHO` к пину 9 Arduino
+In this project, we built a robot that demonstrates the basic principles of working with Arduino and peripherals such as ultrasonic sensors and servo motors. We learned:
 
-2. **Драйвер двигателей L298N**:
-   -  выводы `IN1`-`IN4` к соответствующим пинам Arduino для управления направлением вращения моторов.
-   -  выводы `ENA` и `ENB` к ШИМ-пинам Arduino для регулировки скорости.
-   -  питание:
-     - `12V` к источнику питания (в данном случае 7.4V от батарей)
-     - `GND` к общему заземлению с Arduino
+- How to construct mechanisms using 3D printing. The robot was assembled entirely without glue, using bolts for all connections.
+- How to connect and program motors and sensors.
+- How to develop algorithms for autonomous robot control.
 
-3. **Датчик расстояния**:
-   -  `VCC` к 5V на Arduino
-   -  `GND` к общему заземлению
-   -  `TRIG` и `ECHO` к соответствующим цифровым пинам Arduino
-
-4. **Сервомотор**:
-   - Питание (VCC) подключено к пину 11.
-   - Земля (GND) подключена к пину 12.
-   - Управляющий сигнал подключен к пину 10 Arduino.
-
-## Логика работы кода
-
-1. **Поиск цели**:
-   - Робот начинает вращаться в поисках цели, постоянно измеряя расстояние с помощью ультразвукового датчика.
-
-2. **Обнаружение цели**:
-   - Если расстояние до цели меньше 55 см, робот перестает вращаться и начинает двигаться вперед к цели.
-
-3. **Потеря цели**:
-   - Если цель теряется (расстояние становится больше 55 см), робот выполняет поворот вправо на определенное время.
-   - После поворота вправо снова проверяет наличие цели.
-     - Если цель не обнаружена, выполняет поворот влево на заданное время.
-     - Если и после поворота влево цель не найдена, продолжает вращаться влево в поисках цели.
-
-4. **Реакция на близкое препятствие**:
-   - При обнаружении цели ближе 5 см сервомотор поворачивается на 60 градусов.
-
+This project helps develop skills in robotics, programming, and engineering design, and provides an excellent foundation for more complex projects.
