@@ -69,12 +69,25 @@ This project is dedicated to creating a Sumo Robot based on Arduino Uno. The rob
 ---
 
 ## Code Overview
-The Arduino code includes:
-- **Motor Control**: Manages the robot's rotation and movement.
-- **Sensor Reading**: Continuously monitors the ultrasonic sensor for objects.
-- **Target Detection**: Processes sensor data to identify objects.
-- **Lifting Mechanism**: Controls the servo motor to lift objects.
 
+1. States:
+Stop.
+Rotate right/left to search for a target.
+Move forward towards a detected target.
+Lift the target using a servo motor.
+
+2. Ultrasonic Sensor:
+Measures distance to objects.
+Triggers state changes based on proximity to the target.
+
+3. Motors:
+Control movement and turning.
+Functions: moveForward(), turnRight(), turnLeft(), stopMotors().
+
+4. Servo Motor:
+Activates to lift the target when it’s within the defined range.
+
+The robot continuously checks distance every 50ms and switches behavior autonomously to find and interact with targets.
 
 ---
 
