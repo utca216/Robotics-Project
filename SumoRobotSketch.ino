@@ -1,176 +1,127 @@
-#include <Ultrasonic.h>
+#include <AFMotor.h>
+#include <NewPing.h> // Библиотека для работы с ультразвуковым датчиком
 #include <Servo.h>
+Servo myservo;
 
-// Пины для моторов и L298N
-#define IN1 2
-#define IN2 3
-#define IN3 4
-#define IN4 5
-#define ENA 6
-#define ENB 7
+#define TRIG_PIN A3       // Пин TRIG ультразвукового датчика
+#define ECHO_PIN A4       // Пин ECHO ультразвукового датчика
+#define MAX_DISTANCE 200  // Максимальная дистанция, которую измеряет датчик
 
-// Пины для ультразвукового датчика
-#define TRIG_PIN 8
-#define ECHO_PIN 9
+#define TARGET_DISTANCE 70   // Расстояние, при котором цель считается найденной
+#define Servo_Distance 10
+#define TURN_DURATION 2000   // Длительность поворота вправо в миллисекундах
+#define SPEED_FORWARD 200    // Скорость движения вперед
+#define SPEED_TURN 150       // Скорость при поворотах
+#define DISTANCE_CHECK_RATE 50 // Частота проверки датчика (в миллисекундах)
 
-// Пины для сервомотора
-#define SERVO_PIN 10      // Управляющий пин для сервомотора
-#define SERVO_VCC_PIN 11  // Питание для сервомотора
-#define SERVO_GND_PIN 12  // GND для сервомотора
+AF_DCMotor motor1(1, MOTOR12_64KHZ); // Левый мотор
+AF_DCMotor motor2(2, MOTOR12_64KHZ); // Правый мотор
 
-// Пины для датчиков цвета
-#define photoResistorFrontPin = A0;  // Передний фоторезистор
-#define photoResistorBackPin = A1;   // Задний фоторезистор
+NewPing sonar(TRIG_PIN, ECHO_PIN, MAX_DISTANCE);
 
-Ultrasonic ultrasonic(TRIG_PIN, ECHO_PIN); // Инициализация ультразвукового датчика
-Servo servo;                               // Объект для управления сервомотором
-
-// Переменные для управления сервомотором
-unsigned long servoLastMoved = 0; // Время последнего поворота сервомотора
-const int servoDelay = 500;       // Задержка для стабилизации сервопривода
-bool servoTurned = false;         // Флаг для отслеживания состояния поворота сервомотора
-
-// Время движения при обнаружении черной линии
-const int moveTimeOnLine = 500;
+unsigned long lastDistanceCheck = 0; // Время последней проверки расстояния
+unsigned long lastTurnTime = 0;      // Время начала поворота
+int currentState = 0;                // 0: остановка, 1: вращение вправо, 2: вращение влево, 3: движение вперед
 
 void setup() {
-  // Устанавливаем пины для управления моторами как выходы
-  pinMode(IN1, OUTPUT);
-  pinMode(IN2, OUTPUT);
-  pinMode(IN3, OUTPUT);
-  pinMode(IN4, OUTPUT);
-  pinMode(ENA, OUTPUT);
-  pinMode(ENB, OUTPUT);
-
-  // Настройка пинов питания для сервомотора
-  pinMode(SERVO_VCC_PIN, OUTPUT);
-  pinMode(SERVO_GND_PIN, OUTPUT);
-  digitalWrite(SERVO_VCC_PIN, HIGH);  // Подаем питание на серво
-  digitalWrite(SERVO_GND_PIN, LOW);   // Подключаем землю для серво
-
-  // Подключение сервопривода к управляющему пину
-  servo.attach(SERVO_PIN);
-
-  // Настройка фоторезисторов
-  pinMode(photoResistorFrontPin, INPUT);
-  pinMode(photoResistorBackPin, INPUT);
-
-  // Инициализация скорости моторов
-  analogWrite(ENA, 255); // Максимальная скорость для первого двигателя
-  analogWrite(ENB, 255); // Максимальная скорость для второго двигателя
-
-  // Инициализация серийного монитора для отладки
-  Serial.begin(9600);
+  pinMode(LED_BUILTIN, OUTPUT);
+  pinMode(A5, OUTPUT);
+  pinMode(A2, OUTPUT);
+  digitalWrite(A5, LOW);
+  digitalWrite(A2, HIGH);
+  Serial.begin(9600); // Для отладки
+  myservo.attach(10);
+  myservo.write(60);
 }
 
 void loop() {
-  long distance = ultrasonic.read(); // Считываем расстояние с ультразвукового датчика
-  
-  // Чтение значений с фоторезисторов
-  int frontLightLevel = analogRead(photoResistorFrontPin);
-  int backLightLevel = analogRead(photoResistorBackPin);
+  unsigned long currentMillis = millis();
 
-  // Проверка на черную линию сзади и спереди
-  if (frontLightLevel < lightThreshold) {
-    // Черная линия спереди - отъехать назад
-    moveBackward();
-    delay(500);
-    stopMotors();
-  } else if (backLightLevel < lightThreshold) {
-    // Черная линия сзади - ехать вперед
-    moveForward();
-    delay(500);
-    stopMotors();
-  }
-  else {
-    // Основная логика движения
-    if (distance < 5) {
-      // Если цель очень близко, проверяем состояние поворота сервомотора
-      if (!servoTurned) {
-        servo.write(60);                  // Поворачиваем сервомотор на 60 градусов
-        servoLastMoved = millis();        // Запоминаем время поворота
-        servoTurned = true;               // Устанавливаем флаг поворота
-      }
-    } else if (distance < 255) {
-      // Если цель найдена, но не слишком близко, едем вперед
-      moveForward();
-      Serial.println("Цель найдена!");
-    } else {
-      // Если цель не найдена, начинаем крутиться
-      turnRight(TURN_TIME);
-      distance = ultrasonic.read(); // Переходим к следующей проверке
-
-      if (distance >= 255) {
-        turnLeft(TURN_TIME); // Если после поворота вправо цель не найдена, поворачиваем влево
-        distance = ultrasonic.read(); // Считываем новое расстояние
-
-        if (distance >= 255) {
-          // Если после поворота влево цель все равно не найдена, продолжаем крутиться влево
-          turnLeft(TURN_TIME);
-        }
-      }
+  // Проверка расстояния каждые 50 мс
+  if (currentMillis - lastDistanceCheck >= DISTANCE_CHECK_RATE) {
+    lastDistanceCheck = currentMillis;
+    int distance = measureDistance();
+    Serial.println(distance);
+    // Логика определения состояния на основе расстояния
+    if (distance > 0 && distance < Servo_Distance) { // Цель найдена
+      currentState = 4;
+    }
+    else if (distance > 0 && distance < TARGET_DISTANCE) { // Цель найдена
+      currentState = 3;
+    } else if (currentState == 3) { // Если цель потеряна
+      currentState = 1;  // Начать вращение вправо
+      lastTurnTime = currentMillis;
     }
   }
 
-  // Проверяем, прошло ли достаточно времени для стабилизации сервомотора
-  if (servoTurned && (millis() - servoLastMoved >= servoDelay)) {
-    servo.write(0);         // Возвращаем сервомотор в исходное положение
-    servoTurned = false;    // Сбрасываем флаг поворота
+  // Выполнение действий в зависимости от текущего состояния
+  switch (currentState) {
+    case 0: // Остановиться
+      stopMotors();
+      break;
+
+    case 1: // Вращение вправо
+      turnRight();
+      if (currentMillis - lastTurnTime >= TURN_DURATION) { // Переход на вращение влево
+        currentState = 2;
+      }
+      break;
+
+    case 2: // Вращение влево
+      turnLeft();
+      if (measureDistance() < TARGET_DISTANCE) { // Если цель найдена
+        currentState = 3;
+      }
+      break;
+
+    case 3: // Движение вперед
+      moveForward();
+      break;
+    case 4:
+      myservo.write(20);
+      moveForward();
+     delay(200);
+      myservo.write(10);
+
   }
+
 }
 
-// Функция движения вперед
+// Функция измерения дистанции
+int measureDistance() {
+  int distance = sonar.ping_cm();
+  if (distance == 0 || distance > MAX_DISTANCE) {
+    return -1; // Некорректные данные
+  }
+  return distance;
+}
+
+// Движение вперед
 void moveForward() {
-  digitalWrite(IN1, HIGH);
-  digitalWrite(IN2, LOW);
-  digitalWrite(IN3, HIGH);
-  digitalWrite(IN4, LOW);
+  motor1.setSpeed(SPEED_FORWARD);
+  motor2.setSpeed(SPEED_FORWARD);
+  motor1.run(BACKWARD);
+  motor2.run(BACKWARD);
 }
 
-// Функция движения назад
-void moveBackward() {
-  digitalWrite(IN1, LOW);
-  digitalWrite(IN2, HIGH);
-  digitalWrite(IN3, LOW);
-  digitalWrite(IN4, HIGH);
+// Поворот на месте вправо
+void turnRight() {
+  motor1.setSpeed(SPEED_TURN);
+  motor2.setSpeed(SPEED_TURN);
+  motor1.run(FORWARD);
+  motor2.run(BACKWARD);
 }
 
-// Функция поворота влево
-void turnLeft(int duration) {
-  digitalWrite(IN1, LOW);
-  digitalWrite(IN2, HIGH);
-  digitalWrite(IN3, HIGH);
-  digitalWrite(IN4, LOW);
-  delay(duration); // Время поворота
+// Поворот на месте влево
+void turnLeft() {
+  motor1.setSpeed(SPEED_TURN);
+  motor2.setSpeed(SPEED_TURN);
+  motor1.run(BACKWARD);
+  motor2.run(FORWARD);
 }
 
-// Функция поворота вправо
-void turnRight(int duration) {
-  digitalWrite(IN1, HIGH);
-  digitalWrite(IN2, LOW);
-  digitalWrite(IN3, LOW);
-  digitalWrite(IN4, HIGH);
-  delay(duration); // Время поворота
-}
-
-// Функция движения вперед на заданное время
-void moveForwardFor(int duration) {
-  moveForward();
-  delay(duration);
-  stopMotors();
-}
-
-// Функция движения назад на заданное время
-void moveBackwardFor(int duration) {
-  moveBackward();
-  delay(duration);
-  stopMotors();
-}
-
-// Функция остановки моторов
+// Остановка моторов
 void stopMotors() {
-  digitalWrite(IN1, LOW);
-  digitalWrite(IN2, LOW);
-  digitalWrite(IN3, LOW);
-  digitalWrite(IN4, LOW);
+  motor1.run(RELEASE);
+  motor2.run(RELEASE);
 }
